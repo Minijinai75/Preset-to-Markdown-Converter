@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Worldbook to Markdown Converter</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f3ee;
+  --panel: #ffffff;
+  --panel-soft: #fbfaf7;
+  --ink: #24211d;
+  --muted: #6f6a62;
+  --line: #d9d2c8;
+  --accent: #1f6f68;
+  --accent-strong: #164f4a;
+  --accent-soft: #e6f2ef;
+  --warn: #a25222;
+  --code-bg: #f0ede7;
+  --shadow: 0 10px 30px rgba(53, 43, 31, 0.08);
+  --preview-bg: #fffdfa;
+  --preview-fg: #24211d;
+  --preview-muted: #6f6a62;
+  --preview-border: rgba(127, 118, 104, 0.32);
+  --preview-accent: #1f6f68;
+  --preview-accent-weak: rgba(31, 111, 104, 0.12);
+  --preview-code-bg: #f1eee8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  min-height: 40px;
+  padding: 8px 12px;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.primary:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+header {
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.topbar {
+  width: min(1480px, 100%);
+  margin: 0 auto;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  display: grid;
+  gap: 2px;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.brand span {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  min-width: 0;
+}
+
+.status strong {
+  color: var(--accent-strong);
+}
+
+main {
+  width: min(1480px, 100%);
+  margin: 0 auto;
+  padding: 22px 24px 28px;
+  display: grid;
+  grid-template-columns: minmax(300px, 370px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.sidebar,
+.workspace {
+  min-width: 0;
+}
+
+.sidebar {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.dropzone {
+  padding: 18px;
+}
+
+.drop-target {
+  border: 1.5px dashed var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+  min-height: 172px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 20px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.drop-target.dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.upload-mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.drop-target p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.drop-target small {
+  color: var(--muted);
+}
+
+#fileInput {
+  display: none;
+}
+
+.file-name {
+  color: var(--muted);
+  font-size: 0.82rem;
+  word-break: break-all;
+}
+
+.panel-section {
+  padding: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.panel-section:first-child {
+  border-top: 0;
+}
+
+.panel-title {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.control-list {
+  display: grid;
+  gap: 12px;
+}
+
+.check-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.check-row input {
+  margin-top: 4px;
+  accent-color: var(--accent);
+}
+
+.check-row span {
+  color: var(--muted);
+  display: block;
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.actions .wide {
+  grid-column: 1 / -1;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metric {
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.metric b {
+  display: block;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.metric span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.error {
+  display: none;
+  border-color: rgba(162, 82, 34, 0.45);
+  background: #fff8f1;
+  color: var(--warn);
+  padding: 12px 14px;
+  font-size: 0.88rem;
+}
+
+.workspace {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  width: fit-content;
+}
+
+.tab-button {
+  border: 0;
+  min-height: 34px;
+  padding: 7px 12px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.tab-button.active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.content-panel {
+  min-height: 68vh;
+  overflow: hidden;
+  background: var(--preview-bg);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.view {
+  display: none;
+  min-height: 68vh;
+}
+
+.view.active {
+  display: block;
+}
+
+.preview {
+  background: var(--preview-bg);
+  color: var(--preview-fg);
+  overflow: hidden;
+  height: calc(100vh - 116px);
+  min-height: 68vh;
+  padding: 0;
+}
+
+.preview.empty {
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: clamp(18px, 3vw, 34px);
+}
+
+.preview-shell {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+}
+
+.preview-shell.toc-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.preview-toc {
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  border-right: 1px solid var(--preview-border);
+  padding: 10px 8px 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0));
+}
+
+.preview-toc h2 {
+  margin: 4px 8px 9px;
+  color: var(--preview-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.preview-toc button {
+  width: 100%;
+  min-height: 28px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--preview-fg);
+  display: block;
+  overflow: hidden;
+  padding: 4px 7px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-toc button:hover,
+.preview-toc button:focus-visible {
+  background: var(--preview-accent-weak);
+  outline: none;
+}
+
+.preview-toc button[data-level="3"] {
+  padding-left: 20px;
+  color: var(--preview-muted);
+}
+
+.preview-scroll {
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  position: relative;
+  scroll-behavior: smooth;
+}
+
+.preview-doc {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 18px 24px 48px;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+.preview.wide .preview-doc {
+  max-width: none;
+}
+
+.preview-doc > :first-child {
+  margin-top: 0;
+}
+
+.preview-doc h1,
+.preview-doc h2,
+.preview-doc h3,
+.preview-doc h4 {
+  line-height: 1.25;
+  letter-spacing: 0;
+  scroll-margin-top: 1rem;
+}
+
+.preview-doc h1 {
+  margin: 0 0 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--preview-border);
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+}
+
+.preview-doc h2 {
+  margin: 34px 0 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--preview-border);
+  font-size: 1.35rem;
+}
+
+.preview-doc h3 {
+  margin: 24px 0 10px;
+  font-size: 1.1rem;
+}
+
+.preview-doc p,
+.preview-doc ul,
+.preview-doc ol,
+.preview-doc blockquote,
+.preview-doc pre,
+.preview-doc table {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
+.preview-doc pre,
+.preview-doc code {
+  background: transparent;
+  border-radius: 6px;
+  font-family: "Cascadia Code", "Consolas", monospace;
+}
+
+.preview-doc code {
+  padding: 1px 5px;
+  word-break: break-word;
+  font-size: 0.92em;
+}
+
+.preview-doc pre {
+  padding: 2px 0 2px 14px;
+  overflow: visible;
+  white-space: pre-wrap;
+  border: 0;
+  border-left: 3px solid var(--preview-border);
+  border-radius: 0;
+  color: var(--preview-fg);
+}
+
+.preview-doc pre code {
+  padding: 0;
+  background: transparent;
+  white-space: pre-wrap;
+}
+
+.preview-doc blockquote {
+  border-left: 4px solid var(--preview-border);
+  padding: 6px 0 6px 14px;
+  color: var(--preview-muted);
+  background: transparent;
+}
+
+.preview-doc table {
+  border-collapse: collapse;
+  width: 100%;
+  display: block;
+  overflow-x: auto;
+}
+
+.preview-doc th,
+.preview-doc td {
+  border: 1px solid var(--preview-border);
+  padding: 7px 9px;
+}
+
+.preview-doc hr {
+  border: 0;
+  border-top: 1px solid var(--preview-border);
+  margin: 24px 0;
+}
+
+.source-wrap {
+  min-height: 68vh;
+}
+
+.source-wrap.active {
+  display: grid;
+}
+
+#markdownSource {
+  width: 100%;
+  min-height: 68vh;
+  resize: none;
+  border: 0;
+  outline: none;
+  padding: 18px;
+  color: var(--ink);
+  background: var(--panel);
+  font-family: "Cascadia Code", "Consolas", monospace;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  background: var(--accent-strong);
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 13px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 10;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  main {
+    grid-template-columns: 1fr;
+  }
+
+  .preview,
+  .view,
+  .content-panel,
+  #markdownSource,
+  .source-wrap {
+    min-height: 56vh;
+  }
+
+  .preview {
+    height: calc(100vh - 162px);
+  }
+
+  .preview-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .preview-toc {
+    height: auto;
+    max-height: 180px;
+    border-right: 0;
+    border-bottom: 1px solid var(--preview-border);
+  }
+
+  .preview-doc {
+    padding: 16px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <div class="topbar">
+      <div class="brand">
+        <h1>Worldbook to Markdown Converter</h1>
+        <span>上傳 SillyTavern 世界書 JSON，抽出 comment 與 content，轉成可下載的 Markdown。</span>
+      </div>
+      <div class="status" aria-live="polite">
+        <span id="statusText">尚未載入檔案</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <aside class="sidebar">
+      <section class="panel dropzone">
+        <label class="drop-target" id="dropTarget" for="fileInput">
+          <span class="upload-mark">+</span>
+          <p>選擇或拖曳 JSON</p>
+          <small>SillyTavern WorldInfo / Lorebook JSON 格式皆可</small>
+          <span class="file-name" id="fileName">未選擇檔案</span>
+        </label>
+        <input id="fileInput" type="file" accept=".json,application/json">
+      </section>
+
+      <section class="panel">
+        <div class="panel-section">
+          <h2 class="panel-title">輸出選項</h2>
+          <div class="control-list">
+            <label class="check-row">
+              <input id="usePromptOrder" type="checkbox" checked>
+              <span>
+                依 displayIndex / order 排序
+                <span>若沒有排序欄位，會使用 entries 原始順序。</span>
+              </span>
+            </label>
+            <label class="check-row">
+              <input id="enabledOnly" type="checkbox">
+              <span>
+                略過停用項目
+                <span>disable 為 true 的世界書項目會從 Markdown 中略過。</span>
+              </span>
+            </label>
+            <label class="check-row">
+              <input id="addSeparator" type="checkbox" checked>
+              <span>
+                在每段之間加入分隔線
+                <span>方便長檔案在 Obsidian / GitHub 中閱讀。</span>
+              </span>
+            </label>
+            <label class="check-row">
+              <input id="preserveContent" type="checkbox" checked>
+              <span>
+                content 保持原文
+                <span>以純文字區塊輸出，避免 Markdown 或 HTML 改變原內容。</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h2 class="panel-title">操作</h2>
+          <div class="actions">
+            <button id="copyButton" type="button" disabled>複製 MD</button>
+            <button id="downloadButton" class="primary" type="button" disabled>下載 MD</button>
+            <button id="sampleButton" class="wide" type="button">載入範例格式</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <h2 class="panel-title">統計</h2>
+          <div class="summary-grid">
+            <div class="metric"><b id="totalCount">0</b><span>讀取項目</span></div>
+            <div class="metric"><b id="outputCount">0</b><span>輸出項目</span></div>
+            <div class="metric"><b id="enabledCount">0</b><span>未停用</span></div>
+            <div class="metric"><b id="charCount">0</b><span>MD 字數</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel error" id="errorBox" role="alert"></section>
+    </aside>
+
+    <section class="workspace">
+      <nav class="tabs" aria-label="轉換結果">
+        <button class="tab-button active" type="button" data-tab="previewView">預覽</button>
+        <button class="tab-button" type="button" data-tab="sourceView">Markdown</button>
+      </nav>
+
+      <section class="panel content-panel">
+        <article class="view preview active empty" id="previewView">
+          <div>
+            <h2>等待 JSON</h2>
+            <p>上傳後會在這裡看到 Markdown 的實際顯示效果。</p>
+          </div>
+        </article>
+        <div class="view source-wrap" id="sourceView">
+          <textarea id="markdownSource" spellcheck="false" readonly placeholder="轉換後的 Markdown 會顯示在這裡。"></textarea>
+        </div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+const fileInput = document.getElementById("fileInput");
+const dropTarget = document.getElementById("dropTarget");
+const fileName = document.getElementById("fileName");
+const statusText = document.getElementById("statusText");
+const errorBox = document.getElementById("errorBox");
+const previewView = document.getElementById("previewView");
+const markdownSource = document.getElementById("markdownSource");
+const copyButton = document.getElementById("copyButton");
+const downloadButton = document.getElementById("downloadButton");
+const sampleButton = document.getElementById("sampleButton");
+const usePromptOrder = document.getElementById("usePromptOrder");
+const enabledOnly = document.getElementById("enabledOnly");
+const addSeparator = document.getElementById("addSeparator");
+const preserveContent = document.getElementById("preserveContent");
+const toast = document.getElementById("toast");
+
+let currentJson = null;
+let currentBaseName = "worldbook-contents";
+
+const sampleData = {
+  entries: {
+    "0": {
+      uid: 0,
+      displayIndex: 0,
+      comment: "01_角色卡管理",
+      disable: false,
+      order: 100,
+      content: "這裡放世界書 content 原文。\n\n- 可以有 Markdown 符號\n- 也可以有 {{char}} / {{user}}\n- 轉換後仍會保持純文字"
+    },
+    "1": {
+      uid: 1,
+      displayIndex: 1,
+      comment: "02_停用範例",
+      disable: true,
+      order: 90,
+      content: "> 這段只有取消略過停用項目時才會輸出。"
+    }
+  }
+};
+
+fileInput.addEventListener("change", event => {
+  const file = event.target.files && event.target.files[0];
+  if (file) readFile(file);
+});
+
+["dragenter", "dragover"].forEach(type => {
+  dropTarget.addEventListener(type, event => {
+    event.preventDefault();
+    dropTarget.classList.add("dragging");
+  });
+});
+
+["dragleave", "drop"].forEach(type => {
+  dropTarget.addEventListener(type, event => {
+    event.preventDefault();
+    dropTarget.classList.remove("dragging");
+  });
+});
+
+dropTarget.addEventListener("drop", event => {
+  const file = event.dataTransfer.files && event.dataTransfer.files[0];
+  if (file) readFile(file);
+});
+
+[usePromptOrder, enabledOnly, addSeparator, preserveContent].forEach(input => {
+  input.addEventListener("change", () => {
+    if (currentJson) convertAndRender(currentJson);
+  });
+});
+
+document.querySelectorAll(".tab-button").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".tab-button").forEach(item => item.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(item => item.classList.remove("active"));
+    button.classList.add("active");
+    document.getElementById(button.dataset.tab).classList.add("active");
+  });
+});
+
+copyButton.addEventListener("click", async () => {
+  const text = markdownSource.value;
+  if (!text) return;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast("已複製 Markdown");
+  } catch (error) {
+    markdownSource.focus();
+    markdownSource.select();
+    document.execCommand("copy");
+    showToast("已複製 Markdown");
+  }
+});
+
+downloadButton.addEventListener("click", () => {
+  const text = markdownSource.value;
+  if (!text) return;
+
+  const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${currentBaseName || "worldbook-contents"}.md`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast("已建立 MD 下載");
+});
+
+sampleButton.addEventListener("click", () => {
+  currentBaseName = "sample-worldbook-contents";
+  fileName.textContent = "範例格式";
+  currentJson = sampleData;
+  convertAndRender(currentJson);
+});
+
+function readFile(file) {
+  currentBaseName = normalizeFileName(file.name.replace(/\.json$/i, "")) || "worldbook-contents";
+  fileName.textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = event => {
+    try {
+      currentJson = JSON.parse(event.target.result);
+      convertAndRender(currentJson);
+    } catch (error) {
+      showError(`JSON 解析失敗：${error.message}`);
+    }
+  };
+  reader.onerror = () => showError("無法讀取檔案，請重新選擇 JSON。");
+  reader.readAsText(file, "utf-8");
+}
+
+function convertAndRender(json) {
+  try {
+    const result = buildMarkdown(json);
+    clearError();
+    markdownSource.value = result.markdown;
+    renderMarkdown(result.markdown);
+    updateSummary(result);
+    copyButton.disabled = !result.markdown;
+    downloadButton.disabled = !result.markdown;
+    statusText.innerHTML = result.outputCount
+      ? `已轉換 <strong>${result.outputCount}</strong> 筆內容`
+      : "沒有可輸出的 content";
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+function buildMarkdown(json) {
+  const data = json && typeof json === "object" && !Array.isArray(json) && json.data ? json.data : json;
+  const entries = extractWorldbookEntries(data);
+
+  if (!entries.length) {
+    throw new Error("找不到 entries，請確認這是 SillyTavern WorldInfo / Lorebook JSON。");
+  }
+
+  const ordered = getOrderedEntries(entries);
+  const sections = [];
+  let activeCount = 0;
+
+  ordered.forEach(entry => {
+    const isActive = entry.disable !== true && entry.disabled !== true;
+    if (isActive) activeCount += 1;
+    if (enabledOnly.checked && !isActive) return;
+
+    const name = String(entry.comment || entry.uid || "Untitled").trim();
+    const content = String(entry.content || "").trim();
+    if (!content) return;
+
+    sections.push({
+      name: sanitizeHeading(name),
+      content
+    });
+  });
+
+  const separator = addSeparator.checked ? "\n\n---\n\n" : "\n\n";
+  const body = sections.map(section => {
+    const content = preserveContent.checked ? fenceContent(section.content) : section.content;
+    return `## ${section.name}\n\n${content}`;
+  }).join(separator);
+  const markdown = body ? `# Contents\n\n${body}\n` : "# Contents\n";
+
+  return {
+    markdown,
+    totalCount: entries.length,
+    outputCount: sections.length,
+    enabledCount: activeCount,
+    charCount: markdown.length
+  };
+}
+
+function extractWorldbookEntries(data) {
+  if (Array.isArray(data)) return data;
+
+  const candidates = [
+    data && data.entries,
+    data && data.world_info && data.world_info.entries,
+    data && data.character_book && data.character_book.entries,
+    data && data.data && data.data.entries,
+    data && data.data && data.data.character_book && data.data.character_book.entries
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
+    if (candidate && typeof candidate === "object") return Object.values(candidate);
+  }
+
+  return [];
+}
+
+function getOrderedEntries(entries) {
+  const indexed = entries.map((entry, index) => ({ entry, index }));
+
+  if (!usePromptOrder.checked) {
+    return indexed.map(item => item.entry);
+  }
+
+  return indexed
+    .sort((a, b) => {
+      const aKey = sortValue(a.entry, a.index);
+      const bKey = sortValue(b.entry, b.index);
+      return aKey - bKey;
+    })
+    .map(item => item.entry);
+}
+
+function sortValue(entry, fallback) {
+  const value = entry.displayIndex ?? entry.order ?? entry.uid;
+  return Number.isFinite(Number(value)) ? Number(value) : fallback;
+}
+
+function sanitizeHeading(text) {
+  return text.replace(/\s+/g, " ").replace(/#/g, "\\#").trim() || "Untitled";
+}
+
+function fenceContent(content) {
+  const backtickFence = makeFence(content, "`");
+  const tildeFence = makeFence(content, "~");
+  const fence = tildeFence.length <= backtickFence.length ? tildeFence : backtickFence;
+  return `${fence}text\n${content}\n${fence}`;
+}
+
+function makeFence(content, char) {
+  const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const runs = String(content).match(new RegExp(`${escaped}+`, "g")) || [];
+  const longest = runs.reduce((max, run) => Math.max(max, run.length), 0);
+  return char.repeat(Math.max(3, longest + 1));
+}
+
+function renderMarkdown(markdown) {
+  previewView.classList.remove("empty");
+
+  let rendered = "";
+  if (window.marked && typeof window.marked.parse === "function") {
+    rendered = window.marked.parse(markdown, {
+      breaks: true,
+      gfm: true,
+      mangle: false,
+      headerIds: false
+    });
+  } else {
+    rendered = fallbackMarkdown(markdown);
+  }
+
+  const temp = document.createElement("div");
+  temp.innerHTML = rendered;
+  const headings = buildHeadingIndex(temp);
+  const toc = headings.length
+    ? headings.map(item => `<button type="button" data-target="${item.id}" data-level="${item.level}">${escapeHtml(item.text)}</button>`).join("")
+    : `<button type="button" disabled>沒有標題</button>`;
+
+  previewView.innerHTML = `
+    <div class="preview-shell">
+      <aside class="preview-toc" aria-label="Contents">
+        <h2>Contents</h2>
+        ${toc}
+      </aside>
+      <div class="preview-scroll">
+        <div class="preview-doc">${temp.innerHTML}</div>
+      </div>
+    </div>
+  `;
+
+  previewView.querySelectorAll(".preview-toc button[data-target]").forEach(button => {
+    button.addEventListener("click", () => {
+      const target = previewView.querySelector(`#${CSS.escape(button.dataset.target)}`);
+      const scrollBox = previewView.querySelector(".preview-scroll");
+      if (!target || !scrollBox) return;
+
+      scrollBox.scrollTo({
+        top: target.offsetTop - 12,
+        behavior: "smooth"
+      });
+    });
+  });
+
+}
+
+function buildHeadingIndex(container) {
+  const headings = [...container.querySelectorAll("h1, h2, h3")];
+  const seen = new Map();
+
+  return headings.map((heading, index) => {
+    const text = heading.textContent.trim() || `Heading ${index + 1}`;
+    const base = slugify(text) || `heading-${index + 1}`;
+    const count = seen.get(base) || 0;
+    seen.set(base, count + 1);
+    const id = count ? `${base}-${count + 1}` : base;
+    heading.id = id;
+    return {
+      id,
+      text,
+      level: Number(heading.tagName.slice(1))
+    };
+  });
+}
+
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[\s_]+/g, "-")
+    .replace(/[^\p{L}\p{N}-]+/gu, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function fallbackMarkdown(markdown) {
+  const escaped = escapeHtml(markdown);
+  return escaped
+    .replace(/^# (.*)$/gm, "<h1>$1</h1>")
+    .replace(/^## (.*)$/gm, "<h2>$1</h2>")
+    .replace(/^### (.*)$/gm, "<h3>$1</h3>")
+    .replace(/^---$/gm, "<hr>")
+    .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
+    .replace(/\n{2,}/g, "</p><p>")
+    .replace(/^/, "<p>")
+    .replace(/$/, "</p>");
+}
+
+function updateSummary(result) {
+  document.getElementById("totalCount").textContent = result.totalCount;
+  document.getElementById("outputCount").textContent = result.outputCount;
+  document.getElementById("enabledCount").textContent = result.enabledCount;
+  document.getElementById("charCount").textContent = result.charCount.toLocaleString();
+}
+
+function showError(message) {
+  errorBox.style.display = "block";
+  errorBox.textContent = message;
+  statusText.textContent = "轉換失敗";
+  copyButton.disabled = true;
+  downloadButton.disabled = true;
+}
+
+function clearError() {
+  errorBox.style.display = "none";
+  errorBox.textContent = "";
+}
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add("show");
+  window.clearTimeout(showToast.timer);
+  showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 1800);
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function normalizeFileName(name) {
+  return name
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+</script>
+</body>
+</html>
